@@ -1,0 +1,52 @@
+---
+import { getCollection, render } from "astro:content";
+import { SHOW_BUY_BUTTON } from "astro:env/server";
+// con render se puede renderizar el contenido del markdown (coleccion)
+import Layout from "../../layouts/Layout.astro";
+import BookScore from "../../components/BookScore.astro";
+import BuyButton from "../../components/BuyButton.astro";
+
+export async function getStaticPaths() {
+    const books = await getCollection("books");
+    return books.map((book) => ({
+        params: { id: book.slug },
+        props: { book },
+    }));
+    //el map devuelve un array de objetos   
+}
+
+const { book } = Astro.props;
+const { data, slug } = book;
+const { title, author, img, readtime, description, buy } = data;
+
+const { Content } = await render(book);
+// esto nos permite recuperar el contenido del markdonw u otro tipo de fichero de cada item
+export const prerender = true;
+---
+
+<Layout title={`${title} - DevBooks`}>
+    <div class="flex gap-12">
+        <!-- renderizar el contenido del markdown -->
+        <aside class="flex flex-col items-center gap-4">
+            <a href="/" class="hover:underline opacity-70">⬅️ Volver a Inicio</a>
+            <img transition:name={`img-${slug}`} class="rounded w-72 h-auto" src={`/${img}`} alt={title} />
+
+            <BookScore server:defer id={slug}>
+                <span slot="fallback" class="text-xs opacity-70">Cargando puntuacion ...</span>
+            </BookScore>
+
+            {
+                SHOW_BUY_BUTTON && <BuyButton server:defer buy={buy} />
+            }
+        </aside>
+
+        <main class="max-w-3xl">
+            <h1 transition:name={`title-${slug}`} class="text-4xl font-bold mb-4">{title}</h1>
+            <div class="prose prose-invert"> <!-- clase de plugin typography -->
+                <!-- renderizar el contenido del markdown, esto es lo interesante -->
+                <!-- hay q crear el contenido para recuperar aqui, entonces se renderiza con render from astro:content -->
+                <Content />
+            </div>
+        </main>
+    </div>
+</Layout>
